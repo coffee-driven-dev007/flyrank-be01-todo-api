@@ -7,7 +7,7 @@ layer underneath it.
 
 ## Run it
 
-```bash
+```
 npm install
 node index.js
 ```
@@ -45,14 +45,20 @@ setup overhead. The database file lives at the project root, alongside
 
 ## Example
 
-```
-$ curl -i -X POST http://localhost:3000/tasks -H "Content-Type: application/json" -d '{"title":"Buy milk"}'
+Request:
 
-HTTP/1.1 201 Created
-Content-Type: application/json; charset=utf-8
+    curl -i -X POST http://localhost:3000/tasks -H "Content-Type: application/json" -d "{\"title\":\"Buy milk\"}"
 
-{"id":4,"title":"Buy milk","done":false}
-```
+Response:
+
+    HTTP/1.1 201 Created
+    Content-Type: application/json; charset=utf-8
+
+    {"id":4,"title":"Buy milk","done":false}
+
+## Swagger UI
+
+![Swagger UI screenshot](./swagger-screenshot.png)
 
 ## Database
 
@@ -62,25 +68,20 @@ Content-Type: application/json; charset=utf-8
 
 ### Example SQL query I ran directly against the database
 
-```sql
-SELECT * FROM tasks WHERE done = 1;
-```
+    SELECT * FROM tasks WHERE done = 1;
 
 Result, before deleting completed tasks:
-```
-[ { id: 3, title: 'Write README', done: 1 } ]
-```
+
+    [ { id: 3, title: 'Write README', done: 1 } ]
 
 I also ran `UPDATE tasks SET done = 1;` directly against the database file
 (bypassing the API entirely) and confirmed `GET /tasks` immediately
 reflected the change — proving the API is just a thin layer over the real
 data, not a separate source of truth.
 
-    ![Database viewer screenshot](./db-viewer-screenshot.png)
+**Database viewer:**
 
-```markdown
 ![Database viewer screenshot](./db-viewer-screenshot.png)
-```
 
 ## Notes
 
@@ -89,6 +90,16 @@ data, not a separate source of truth.
 - Unknown ids return `404` with a JSON error, never an empty `200`.
 - `GET /tasks` supports `?done=true|false` and `?search=term` using real
   SQL `WHERE` and `LIKE` clauses, not in-memory filtering.
+
+## The mortality experiment
+
+Creating a task, restarting the server, and calling `GET /tasks` again
+used to show only the original 3 seed tasks under the old in-memory
+version — the new one disappeared. That happened because the task list
+lived in a plain JavaScript variable, gone the moment the process exited.
+This is exactly the limitation BE-02 fixes: with SQLite, that same
+restart now preserves every task, because the data lives in `tasks.db`
+on disk instead of in memory.
 
 ## What changed between BE-01 and BE-02
 
