@@ -76,9 +76,7 @@ I also ran `UPDATE tasks SET done = 1;` directly against the database file
 reflected the change — proving the API is just a thin layer over the real
 data, not a separate source of truth.
 
-**Database viewer screenshot:** *(add your own screenshot here after
-opening `tasks.db` in DB Browser for SQLite — see the "What's still needed"
-note in the project notes below)*
+    ![Database viewer screenshot](./db-viewer-screenshot.png)
 
 ```markdown
 ![Database viewer screenshot](./db-viewer-screenshot.png)
