@@ -35,6 +35,17 @@ app.get('/tasks/:id', (req, res) => {
   res.json({ ...row, done: Boolean(row.done) });
 });
 
+app.post('/tasks', (req, res) => {
+  const { title } = req.body || {};
+  if (!title || typeof title !== 'string' || title.trim() === '') {
+    return res.status(400).json({ error: 'title is required and must be a non-empty string' });
+  }
+  const insert = db.prepare('INSERT INTO tasks (title, done) VALUES (?, 0)');
+  const result = insert.run(title.trim());
+  const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ ...newTask, done: Boolean(newTask.done) });
+});
+
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 app.listen(PORT, () => {
