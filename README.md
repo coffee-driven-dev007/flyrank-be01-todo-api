@@ -48,6 +48,10 @@ Content-Type: application/json; charset=utf-8
   with a JSON error message on bad input, never a silent failure.
 - Unknown ids return `404` with a JSON error, never an empty `200`.
 
+    ## Swagger UI
+
+    ![Swagger UI screenshot](./swagger-screenshot.png)
+
 ## The mortality experiment
 
 Creating a task, restarting the server, and calling `GET /tasks` again shows
