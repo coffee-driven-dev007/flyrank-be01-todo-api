@@ -1,18 +1,12 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const openapiSpec = require('./openapi.json');
+const db = require('./db');
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-
-let tasks = [
-  { id: 1, title: 'Buy milk', done: false },
-  { id: 2, title: 'Walk the dog', done: false },
-  { id: 3, title: 'Write README', done: true },
-];
-let nextId = 4;
 
 app.get('/', (req, res) => {
   res.json({
@@ -27,82 +21,18 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/tasks', (req, res) => {
-  let result = tasks;
-  if (req.query.done !== undefined) {
-    const wantDone = req.query.done === 'true';
-    result = result.filter((t) => t.done === wantDone);
-  }
-  if (req.query.search) {
-    const term = req.query.search.toLowerCase();
-    result = result.filter((t) => t.title.toLowerCase().includes(term));
-  }
-  res.json(result);
+  const rows = db.prepare('SELECT * FROM tasks').all();
+  const tasks = rows.map((t) => ({ ...t, done: Boolean(t.done) }));
+  res.json(tasks);
 });
 
 app.get('/tasks/:id', (req, res) => {
   const id = Number(req.params.id);
-  const task = tasks.find((t) => t.id === id);
-  if (!task) {
+  const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  if (!row) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
-  res.json(task);
-});
-
-app.post('/tasks', (req, res) => {
-  const { title } = req.body || {};
-  if (!title || typeof title !== 'string' || title.trim() === '') {
-    return res.status(400).json({ error: 'title is required and must be a non-empty string' });
-  }
-  const newTask = { id: nextId++, title: title.trim(), done: false };
-  tasks.push(newTask);
-  res.status(201).json(newTask);
-});
-
-app.put('/tasks/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const task = tasks.find((t) => t.id === id);
-  if (!task) {
-    return res.status(404).json({ error: `Task ${id} not found` });
-  }
-  const { title, done } = req.body || {};
-  if (title === undefined && done === undefined) {
-    return res.status(400).json({ error: 'provide at least one of: title, done' });
-  }
-  if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
-    return res.status(400).json({ error: 'title must be a non-empty string' });
-  }
-  if (done !== undefined && typeof done !== 'boolean') {
-    return res.status(400).json({ error: 'done must be a boolean' });
-  }
-  if (title !== undefined) task.title = title.trim();
-  if (done !== undefined) task.done = done;
-  res.json(task);
-});
-
-app.delete('/tasks/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const index = tasks.findIndex((t) => t.id === id);
-  if (index === -1) {
-    return res.status(404).json({ error: `Task ${id} not found` });
-  }
-  tasks.splice(index, 1);
-  res.status(204).send();
-});
-
-app.get('/stats', (req, res) => {
-  const total = tasks.length;
-  const done = tasks.filter((t) => t.done).length;
-  res.json({ total, done, open: total - done });
-});
-
-app.post('/reset', (req, res) => {
-  tasks = [
-    { id: 1, title: 'Buy milk', done: false },
-    { id: 2, title: 'Walk the dog', done: false },
-    { id: 3, title: 'Write README', done: true },
-  ];
-  nextId = 4;
-  res.json({ status: 'reset', tasks });
+  res.json({ ...row, done: Boolean(row.done) });
 });
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
